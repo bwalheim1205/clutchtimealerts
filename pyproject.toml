@@ -1,0 +1,23 @@
+[project]
+name = "clutchtimebot"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Brian Walheim", email = "bri125521@gmail.com"},
+]
+dependencies = []
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
+
+[dependency-groups]
+lint = ["pre-commit>=4.0.1", "ruff>=0.7.2"]
+
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["F401"]
