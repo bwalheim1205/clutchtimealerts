@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "Brian Walheim", email = "bri125521@gmail.com"},
 ]
-dependencies = []
+dependencies = ["requests>=2.32.3"]
 requires-python = "==3.12.*"
 readme = "README.md"
 license = {text = "MIT"}
@@ -20,4 +20,4 @@ lint = ["pre-commit>=4.0.1", "ruff>=0.7.2"]
 
 [tool.ruff.lint]
 select = ["E", "F"]
-ignore = ["F401"]
+ignore = ["F401", "E501"]
