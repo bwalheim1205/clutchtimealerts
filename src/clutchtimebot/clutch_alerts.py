@@ -1,5 +1,7 @@
-from clutchtimebot.scraper.live_scores import NBAScoreScraper
 import time
+import requests
+
+from clutchtimebot.scraper.live_scores import NBAScoreScraper
 
 
 class ClutchAlertsService:
@@ -67,7 +69,10 @@ class ClutchAlertsService:
     def run(self) -> None:
         while True:
             # Fetch live games
-            games = self.scraper.live_games()
+            try:
+                games = self.scraper.live_games()
+            except requests.exceptions.ConnectionError:
+                print("Failed to fetch live games. Retrying...")
 
             # Iterate through each live game and send alert
             for game in games:
