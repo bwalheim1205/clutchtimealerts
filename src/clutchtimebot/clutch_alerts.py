@@ -2,15 +2,17 @@ import time
 import requests
 
 from clutchtimebot.scraper.live_scores import NBAScoreScraper
+from clutchtimebot.notifications.base import Notification
 
 
 class ClutchAlertsService:
-    def __init__(self):
+    def __init__(self, notification: Notification) -> None:
         self.scraper = NBAScoreScraper()
+        self.notification = notification
 
     def send_clutch_alert(self, message) -> None:
-        # TODO: Send alert via configured messaging platform (e.g., Discord, Slack, SMS)
         print(message)
+        self.notification.send(message)
 
     def _get_minutes_from_clock(self, clock) -> int:
         """
@@ -73,6 +75,8 @@ class ClutchAlertsService:
                 games = self.scraper.live_games()
             except requests.exceptions.ConnectionError:
                 print("Failed to fetch live games. Retrying...")
+                time.sleep(60)
+                continue
 
             # Iterate through each live game and send alert
             for game in games:

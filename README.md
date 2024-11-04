@@ -6,6 +6,14 @@ A bot that tracks ongoing NBA games and sends alerts when games enter "clutch ti
 - **Customizable Alerts**: Configure the bot to send alerts on various platforms (Discord, Slack, SMS, etc.).
 - **Multiple Game Support**: Tracks multiple NBA games simultaneously to ensure you don't miss any clutch moments.
 
+## Supported Bots
+
+We currently support the following notification types out of the box:
+
+- **GroupMe** 
+
+On our road map we want to expand the supported notification types. If there's a type you want to see supported add an issue or submit a PR for review.
+
 ## Installation
 
 TODO
