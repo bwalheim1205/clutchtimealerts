@@ -14,3 +14,8 @@ class GroupMeNotification(Notification):
     def send(self, message):
         data = {"bot_id": self.bot_id, "text": message}
         requests.post(url=self.BASE_URL, json=data)
+
+
+if __name__ == "__main__":
+    notification = GroupMeNotification()
+    notification.send("test")
