@@ -61,8 +61,6 @@ class ClutchAlertsService:
             return False
         elif minutes == -1 or minutes >= 5:
             return False
-        elif minutes < 5:
-            return False
         elif abs(homeTeamScore - awayTeamScore) > 5:
             return False
 
