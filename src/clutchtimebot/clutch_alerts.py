@@ -3,14 +3,38 @@ import requests
 
 from clutchtimebot.scraper.live_scores import NBAScoreScraper
 from clutchtimebot.notifications.base import Notification
+from clutchtimebot.db_utils import (
+    TABLE_NAME,
+    EXPECTED_COLUMNS,
+    check_and_recreate_table,
+    clear_table,
+    insert_game,
+    check_alert_sent,
+    update_alert_sent,
+)
 
 
 class ClutchAlertsService:
-    def __init__(self, notification: Notification) -> None:
+    def __init__(
+        self, notification: Notification, db_path: str = "clutchtime.db"
+    ) -> None:
         self.scraper = NBAScoreScraper()
         self.notification = notification
+        self.db_path = db_path
 
     def send_clutch_alert(self, message) -> None:
+        """
+        Send the given message as notification.
+
+        Parameters
+        ----------
+        message : str
+            The message to send to notification.
+
+        Returns
+        -------
+        None
+        """
         print(message)
         self.notification.send(message)
 
@@ -66,7 +90,22 @@ class ClutchAlertsService:
 
         return True
 
+    def _create_db(self) -> None:
+        check_and_recreate_table(self.db_path, TABLE_NAME, EXPECTED_COLUMNS)
+
     def run(self) -> None:
+        """
+        Run the ClutchAlertsService to continuously monitor NBA games and send alerts.
+
+        This method initializes the database and enters an infinite loop to fetch
+        live NBA games. It checks each game's status to determine if it is in "clutch time,"
+        and sends alerts for such games. If there are no live games, it sleeps for 2 hours.
+
+        Returns
+        -------
+        None
+        """
+        self._create_db()
         while True:
             # Fetch live games
             try:
@@ -79,16 +118,22 @@ class ClutchAlertsService:
             # Iterate through each live game and send alert
             for game in games:
                 if self.isCluthTime(game):
+                    gameId = game["gameId"]  # noqa: F841
                     homeTeam = game["homeTeam"]["teamTricode"]
                     awayTeam = game["awayTeam"]["teamTricode"]
                     homeTeamScore = game["homeTeam"]["score"]
                     awayTeamScore = game["awayTeam"]["score"]
-                    self.send_clutch_alert(
-                        f"{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}"
-                    )
+                    print("Clutch Game - checking db")
+                    if not check_alert_sent(self.db_path, TABLE_NAME, game["gameId"]):
+                        insert_game(self.db_path, TABLE_NAME, game["gameId"])
+                        self.send_clutch_alert(
+                            f"{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}"
+                        )
+                        update_alert_sent(self.db_path, TABLE_NAME, game["gameId"])
 
             # Sleep for 2 hours if there are no live games
             if len(games) == 0:
+                clear_table(self.db_path, TABLE_NAME)
                 time.sleep(7200)
             # Otherwise sleep for 30 seconds
             else:
