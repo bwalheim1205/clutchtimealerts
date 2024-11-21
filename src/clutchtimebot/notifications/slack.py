@@ -4,6 +4,8 @@ import os
 
 
 class SlackNotification(Notification):
+    COMMON_NAME = "Slack"
+
     def __init__(self, token: str = None, channel: str = None):
         if token is None:
             token = os.getenv("SLACK_TOKEN")
