@@ -12,8 +12,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-f" "--file",
         dest="file",
+        default="config.yml",
         type=str,
-        required=True,
+        required=False,
         help="Path to the YAML config file",
     )
     args = parser.parse_args()
