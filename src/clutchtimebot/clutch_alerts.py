@@ -133,19 +133,23 @@ class ClutchAlertsService:
                     awayTeam = game["awayTeam"]["teamTricode"]
                     homeTeamScore = game["homeTeam"]["score"]
                     awayTeamScore = game["awayTeam"]["score"]
-                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watch"
+                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     print("Clutch Game - checking db")
-                    if not check_alert_sent(self.db_path, TABLE_NAME, game["gameId"]):
-                        insert_game(self.db_path, TABLE_NAME, game["gameId"])
+                    if not check_alert_sent(
+                        self.db_path, self.db_table_name, game["gameId"]
+                    ):
+                        insert_game(self.db_path, self.db_table_name, game["gameId"])
                         self.send_clutch_alert(
                             f"{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"
                         )
-                        update_alert_sent(self.db_path, TABLE_NAME, game["gameId"])
+                        update_alert_sent(
+                            self.db_path, self.db_table_name, game["gameId"]
+                        )
 
             # Sleep for 2 hours if there are no live games
             if len(games) == 0:
-                clear_table(self.db_path, TABLE_NAME)
+                clear_table(self.db_path, self.db_table_name)
                 time.sleep(7200)
             # Otherwise sleep for 30 seconds
             else:
-                time.sleep(30)
+                time.sleep(15)
