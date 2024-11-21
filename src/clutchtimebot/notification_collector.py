@@ -53,7 +53,13 @@ class NotificationCollector:
         for file in os.listdir(folder_path):
             if file.endswith(".py"):
                 module_name = file[:-3]
-                module = importlib.import_module(f"{module_path}.{module_name}")
+                try:
+                    module = importlib.import_module(f"{module_path}.{module_name}")
+                except ImportError:
+                    print(
+                        f"Error importing module: {module_path}.{module_name} ... skipping"
+                    )
+                    continue
                 for name, obj in vars(module).items():
                     if (
                         isinstance(obj, type)
