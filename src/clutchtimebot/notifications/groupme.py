@@ -4,6 +4,7 @@ import os
 
 
 class GroupMeNotification(Notification):
+    COMMON_NAME = "GroupMe"
     BASE_URL = "https://api.groupme.com/v3/bots/post"
 
     def __init__(self, bot_id: str = None):
