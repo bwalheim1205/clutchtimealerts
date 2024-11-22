@@ -9,4 +9,4 @@ COPY ./src src
 # Install dependencies
 RUN pip install .
 
-ENTRYPOINT [ "python3", "-m", "clutchtimebot" ]
+ENTRYPOINT [ "python3", "-m", "clutchtimealerts" ]

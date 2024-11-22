@@ -1,4 +1,4 @@
-from clutchtimebot.notifications.base import Notification
+from clutchtimealerts.notifications.base import Notification
 from slack_sdk import WebClient
 import os
 

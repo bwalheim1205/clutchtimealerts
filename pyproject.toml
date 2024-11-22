@@ -1,5 +1,5 @@
 [project]
-name = "clutchtimebot"
+name = "clutchtimealerts"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
