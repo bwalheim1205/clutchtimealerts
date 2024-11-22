@@ -1,4 +1,4 @@
-from clutchtimebot.db_utils import TABLE_NAME
+from clutchtimealerts.db_utils import TABLE_NAME
 import yaml
 
 

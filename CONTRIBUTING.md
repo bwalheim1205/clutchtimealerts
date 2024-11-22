@@ -1,6 +1,6 @@
-# Contributing to CompactRag
+# Contributing to ClutchTimeAlerts
 
-Welcome to clutchtimebot. These are the instructions for setting up
+Welcome to clutchtimealerts. These are the instructions for setting up
 development environment for contributing to the project
 
 **Table of Contents**

@@ -1,9 +1,9 @@
 import time
 import requests
 
-from clutchtimebot.scraper.live_scores import NBAScoreScraper
-from clutchtimebot.notifications.base import Notification
-from clutchtimebot.db_utils import (
+from clutchtimealerts.scraper.live_scores import NBAScoreScraper
+from clutchtimealerts.notifications.base import Notification
+from clutchtimealerts.db_utils import (
     TABLE_NAME,
     EXPECTED_COLUMNS,
     check_and_recreate_table,

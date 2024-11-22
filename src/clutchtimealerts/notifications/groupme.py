@@ -1,4 +1,4 @@
-from clutchtimebot.notifications.base import Notification
+from clutchtimealerts.notifications.base import Notification
 import requests
 import os
 

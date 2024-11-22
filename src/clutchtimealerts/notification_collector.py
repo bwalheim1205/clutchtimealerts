@@ -1,6 +1,6 @@
 import os
 import importlib
-from clutchtimebot.notifications.base import Notification
+from clutchtimealerts.notifications.base import Notification
 
 
 class NotificationCollector:
@@ -10,10 +10,10 @@ class NotificationCollector:
 
     def _folder_path_module_path(self, folder_path):
         """
-        Convert a folder path to a module path relative to the 'clutchtimebot' package.
+        Convert a folder path to a module path relative to the 'clutchtimealerts' package.
 
         This method takes a file system path to a folder and converts it into a
-        module path that is relative to the 'clutchtimebot' package. This is
+        module path that is relative to the 'clutchtimealerts' package. This is
         useful for dynamically importing modules based on their file location.
 
         Parameters
@@ -26,7 +26,7 @@ class NotificationCollector:
         str
             The module path corresponding to the folder path.
         """
-        root_path = "clutchtimebot" + folder_path.rsplit("clutchtimebot", 1)[1]
+        root_path = "clutchtimealerts" + folder_path.rsplit("clutchtimealerts", 1)[1]
         module_path = root_path.replace("/", ".")
         return module_path
 
@@ -53,7 +53,13 @@ class NotificationCollector:
         for file in os.listdir(folder_path):
             if file.endswith(".py"):
                 module_name = file[:-3]
-                module = importlib.import_module(f"{module_path}.{module_name}")
+                try:
+                    module = importlib.import_module(f"{module_path}.{module_name}")
+                except ImportError:
+                    print(
+                        f"Error importing module: {module_path}.{module_name} ... skipping"
+                    )
+                    continue
                 for name, obj in vars(module).items():
                     if (
                         isinstance(obj, type)

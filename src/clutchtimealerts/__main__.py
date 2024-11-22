@@ -1,7 +1,7 @@
-from clutchtimebot.clutch_alerts import ClutchAlertsService
-from clutchtimebot.notifications.groupme import GroupMeNotification
-from clutchtimebot.config_parser import ConfigParser
-from clutchtimebot.notification_collector import NotificationCollector
+from clutchtimealerts.clutch_alerts import ClutchAlertsService
+from clutchtimealerts.notifications.groupme import GroupMeNotification
+from clutchtimealerts.config_parser import ConfigParser
+from clutchtimealerts.notification_collector import NotificationCollector
 
 import argparse
 import os
@@ -12,8 +12,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-f" "--file",
         dest="file",
+        default="config.yml",
         type=str,
-        required=True,
+        required=False,
         help="Path to the YAML config file",
     )
     args = parser.parse_args()
