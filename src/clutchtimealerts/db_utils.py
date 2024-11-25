@@ -160,9 +160,7 @@ def check_overtime_alert_sent(
     return alert_sent
 
 
-def update_overtime_number(
-    db_name: str, table_name: str, gameid: str, overtime_number: int
-):
+def update_overtime_number(db_name: str, table_name: str, gameid: str):
     """
     Increament the overtime alert number for the given gameid in the specified table and database.
 
@@ -179,7 +177,7 @@ def update_overtime_number(
     cursor = connection.cursor()
     cursor.execute(f"""
                    UPDATE {table_name} 
-                   SET overtime_alert_number = overtime_alert_number + {overtime_number}
+                   SET overtime_alert_number = overtime_alert_number + 1
                    WHERE gameid = '{gameid}';
                    """)
     connection.commit()

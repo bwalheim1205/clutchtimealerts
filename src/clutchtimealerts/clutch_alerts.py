@@ -156,9 +156,7 @@ class ClutchAlertsService:
                     ):
                         insert_game(self.db_path, self.db_table_name, game["gameId"])
                         self.send_clutch_alert(
-                            f"""Clutch Game\n
-                            {homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n
-                            {watch_link}"""
+                            f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
                         update_alert_sent(
                             self.db_path, self.db_table_name, game["gameId"]
@@ -174,9 +172,7 @@ class ClutchAlertsService:
                         overtime_number,
                     ):
                         self.send_clutch_alert(
-                            f"""OT {overtime_number} Alert\n
-                            {homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n
-                            {watch_link}"""
+                            f"""OT{overtime_number} Alert\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
                         update_overtime_number(
                             self.db_path, self.db_table_name, game["gameId"]
