@@ -148,20 +148,7 @@ class ClutchAlertsService:
                 awayTeam = game["awayTeam"]["teamTricode"]
                 homeTeamScore = game["homeTeam"]["score"]
                 awayTeamScore = game["awayTeam"]["score"]
-                if self.isCluthTime(game):
-                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
-                    print("Clutch Game - checking db")
-                    if not check_alert_sent(
-                        self.db_path, self.db_table_name, game["gameId"]
-                    ):
-                        insert_game(self.db_path, self.db_table_name, game["gameId"])
-                        self.send_clutch_alert(
-                            f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
-                        )
-                        update_alert_sent(
-                            self.db_path, self.db_table_name, game["gameId"]
-                        )
-                elif self.isOvertime(game):
+                if self.isOvertime(game):
                     watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     overtime_number = game["period"] - 4
                     print("Overtime Game - checking db")
@@ -174,7 +161,24 @@ class ClutchAlertsService:
                         self.send_clutch_alert(
                             f"""OT{overtime_number} Alert\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
+                        # Update both tables
                         update_overtime_number(
+                            self.db_path, self.db_table_name, game["gameId"]
+                        )
+                        update_alert_sent(
+                            self.db_path, self.db_table_name, game["gameId"]
+                        )
+                elif self.isCluthTime(game):
+                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
+                    print("Clutch Game - checking db")
+                    if not check_alert_sent(
+                        self.db_path, self.db_table_name, game["gameId"]
+                    ):
+                        insert_game(self.db_path, self.db_table_name, game["gameId"])
+                        self.send_clutch_alert(
+                            f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
+                        )
+                        update_alert_sent(
                             self.db_path, self.db_table_name, game["gameId"]
                         )
 
