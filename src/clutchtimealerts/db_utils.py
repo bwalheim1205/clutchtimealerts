@@ -7,7 +7,7 @@ EXPECTED_COLUMNS = [
     ("gameid", "TEXT NOT NULL"),
     ("alert_time", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"),
     ("alert_sent", "BOOLEAN NOT NULL DEFAULT 0"),
-    # ("overtime_alert_number", "INTEGER NOT NULL DEFAULT 0"),
+    ("overtime_alert_number", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 
@@ -131,3 +131,54 @@ def check_alert_sent(db_name: str, table_name: str, gameid: str):
     alert_sent = cursor.fetchone() is not None
     connection.close()
     return alert_sent
+
+
+def check_overtime_alert_sent(
+    db_name: str, table_name: str, gameid: str, overtime_number: int
+):
+    """
+    Check if the alert has been sent for the given gameid in the specified table and database.
+
+    Args:
+        db_name (str): The name of the SQLite database file.
+        table_name (str): The name of the table to check.
+        gameid (str): The gameid to check.
+        overtime_number (int): The overtime number to check
+
+    Returns:
+        bool: True if the alert has been sent (alert_sent is not None), otherwise False.
+    """
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
+    cursor.execute(f"""
+                   SELECT overtime_alert_number FROM {table_name} 
+                   WHERE gameid = '{gameid}' AND 
+                   overtime_alert_number = {overtime_number};
+                   """)
+    alert_sent = cursor.fetchone() is not None
+    connection.close()
+    return alert_sent
+
+
+def update_overtime_number(db_name: str, table_name: str, gameid: str):
+    """
+    Increament the overtime alert number for the given gameid in the specified table and database.
+
+    Args:
+        db_name (str): The name of the SQLite database file.
+        table_name (str): The name of the table to update.
+        gameid (str): The gameid to update.
+        overtime_number (int): The overtime number to increment by.
+
+    Returns:
+        None
+    """
+    connection = sqlite3.connect(db_name)
+    cursor = connection.cursor()
+    cursor.execute(f"""
+                   UPDATE {table_name} 
+                   SET overtime_alert_number = overtime_alert_number + 1
+                   WHERE gameid = '{gameid}';
+                   """)
+    connection.commit()
+    connection.close()

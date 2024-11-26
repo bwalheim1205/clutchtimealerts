@@ -11,6 +11,8 @@ from clutchtimealerts.db_utils import (
     insert_game,
     check_alert_sent,
     update_alert_sent,
+    check_overtime_alert_sent,
+    update_overtime_number,
 )
 
 
@@ -100,8 +102,21 @@ class ClutchAlertsService:
 
         return True
 
-    def _create_db(self) -> None:
-        check_and_recreate_table(self.db_path, self.db_table_name, EXPECTED_COLUMNS)
+    def isOvertime(self, game: dict) -> bool:
+        """
+        Checks if the given game is in overtime.
+
+        Parameters
+        ----------
+        game : dict
+            The game data to check.
+
+        Returns
+        -------
+        bool
+            True if the game is in overtime, otherwise False.
+        """
+        return game["period"] > 4
 
     def run(self) -> None:
         """
@@ -115,7 +130,8 @@ class ClutchAlertsService:
         -------
         None
         """
-        self._create_db()
+        # Create the database
+        check_and_recreate_table(self.db_path, self.db_table_name, EXPECTED_COLUMNS)
         while True:
             # Fetch live games
             try:
@@ -127,12 +143,32 @@ class ClutchAlertsService:
 
             # Iterate through each live game and send alert
             for game in games:
-                if self.isCluthTime(game):
-                    gameId = game["gameId"]  # noqa: F841
-                    homeTeam = game["homeTeam"]["teamTricode"]
-                    awayTeam = game["awayTeam"]["teamTricode"]
-                    homeTeamScore = game["homeTeam"]["score"]
-                    awayTeamScore = game["awayTeam"]["score"]
+                gameId = game["gameId"]
+                homeTeam = game["homeTeam"]["teamTricode"]
+                awayTeam = game["awayTeam"]["teamTricode"]
+                homeTeamScore = game["homeTeam"]["score"]
+                awayTeamScore = game["awayTeam"]["score"]
+                if self.isOvertime(game):
+                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
+                    overtime_number = game["period"] - 4
+                    print("Overtime Game - checking db")
+                    if not check_overtime_alert_sent(
+                        self.db_path,
+                        self.db_table_name,
+                        game["gameId"],
+                        overtime_number,
+                    ):
+                        self.send_clutch_alert(
+                            f"""OT{overtime_number} Alert\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
+                        )
+                        # Update both tables
+                        update_overtime_number(
+                            self.db_path, self.db_table_name, game["gameId"]
+                        )
+                        update_alert_sent(
+                            self.db_path, self.db_table_name, game["gameId"]
+                        )
+                elif self.isCluthTime(game):
                     watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     print("Clutch Game - checking db")
                     if not check_alert_sent(
@@ -140,7 +176,7 @@ class ClutchAlertsService:
                     ):
                         insert_game(self.db_path, self.db_table_name, game["gameId"])
                         self.send_clutch_alert(
-                            f"{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"
+                            f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
                         update_alert_sent(
                             self.db_path, self.db_table_name, game["gameId"]
