@@ -1,5 +1,8 @@
 from clutchtimealerts.db_utils import TABLE_NAME
 import yaml
+import logging
+
+logger = logging.getLogger("clutchtimealerts")
 
 
 class ConfigParser:
@@ -38,14 +41,16 @@ class ConfigParser:
             elif notifiction_type in self.common_name_dict:
                 notification_class = self.common_name_dict[notifiction_type]
             else:
-                print(f"Unknown notification type: {notifiction_type} ... skipping")
+                logger.warning(
+                    f"Unknown notification type: {notifiction_type} ... skipping"
+                )
                 continue
 
             # Instatiate Notification
             try:
                 notification_instance = notification_class(**class_config)
             except Exception as e:
-                raise print(
+                logger.warning(
                     f"Failed to create notification of type {notifiction_type}: {e} ... skipping"
                 )
 

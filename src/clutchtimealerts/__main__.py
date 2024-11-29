@@ -4,7 +4,10 @@ from clutchtimealerts.config_parser import ConfigParser
 from clutchtimealerts.notification_collector import NotificationCollector
 
 import argparse
+import logging
 import os
+
+logger = logging.getLogger("clutchtimealerts")
 
 if __name__ == "__main__":
     # Parse Arguments
@@ -17,7 +20,20 @@ if __name__ == "__main__":
         required=False,
         help="Path to the YAML config file",
     )
+    parser.add_argument(
+        "-l",
+        "--level",
+        dest="level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        type=str,
+        required=False,
+        help="Logging level",
+    )
     args = parser.parse_args()
+
+    # Set log level
+    logger.setLevel(args.level)
 
     # Collect Notification Classes
     collector = NotificationCollector()
