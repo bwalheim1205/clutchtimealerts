@@ -1,6 +1,9 @@
 import os
 import importlib
+import logging
 from clutchtimealerts.notifications.base import Notification
+
+logger = logging.getLogger("clutchtimealerts")
 
 
 class NotificationCollector:
@@ -55,8 +58,9 @@ class NotificationCollector:
                 module_name = file[:-3]
                 try:
                     module = importlib.import_module(f"{module_path}.{module_name}")
+                    logger.debug(f"Imported module: {module_path}.{module_name}")
                 except ImportError:
-                    print(
+                    logger.warning(
                         f"Error importing module: {module_path}.{module_name} ... skipping"
                     )
                     continue
@@ -68,6 +72,9 @@ class NotificationCollector:
                     ):
                         self.classname_dict[name] = obj
                         self.common_name_dict[obj.COMMON_NAME] = obj
+                        logger.debug(
+                            f"Found notification class: {name} ({obj.COMMON_NAME})"
+                        )
 
 
 if __name__ == "__main__":
