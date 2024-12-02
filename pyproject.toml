@@ -11,13 +11,16 @@ readme = "README.md"
 license = {text = "MIT"}
 
 
-[tool.pdm]
-distribution = false
-
 [dependency-groups]
 lint = ["pre-commit>=4.0.1", "ruff>=0.7.2"]
+tests = [
+    "pytest>=8.3.4",
+]
 
 
 [tool.ruff.lint]
 select = ["E", "F"]
 ignore = ["F401", "E501"]
+[tool.pdm]
+distribution = false
+
