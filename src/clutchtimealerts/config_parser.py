@@ -53,6 +53,7 @@ class ConfigParser:
                 logger.warning(
                     f"Failed to create notification of type {notifiction_type}: {e} ... skipping"
                 )
+                continue
 
             self.notifications.append(notification_instance)
 
