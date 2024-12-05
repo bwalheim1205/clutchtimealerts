@@ -15,6 +15,7 @@ We currently support the following notification types out of the box:
 
 - **GroupMe** 
 - **Slack**
+- **Twilio** (SMS)
 
 On our road map we want to expand the supported notification types. If there's a type you want to see supported add an issue or submit a PR for review.
 
@@ -62,6 +63,14 @@ notifications:
     config:
       channel: "#general"
       token: "<slack-api-token>"
+- type: Twilio
+    config:
+      account_sid: "<twilio-accout-sid>"
+      auth_token: "<twilio-auth-token>"
+      from: "+14155551212"
+      to: 
+        - "+14155551212"
+        - "+14155551212"
 ```
 
 ### YAML Fields
