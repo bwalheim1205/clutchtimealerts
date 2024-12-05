@@ -10,7 +10,8 @@ development environment for contributing to the project
 
 ## Setting Up Dev Environment
 
-In order to set up the development environment
+In order to set up the development environment you will need
+to install pdm and pre-commit hooks.
 
 ### Installing PDM
 
@@ -50,3 +51,19 @@ pdm run pre-commit install
 # Test installation
 pdm run pre-commit run --all-files
 ```
+
+## Running Unit Tests
+
+To ensure that your changes do not break existing functionality, we require 
+all contributors to run the unit tests before submitting a pull request.
+Before committing your changes, ensure that all tests pass by running the test 
+command again. If your changes break existing tests, please fix the issues or 
+update the tests accordingly.
+
+To run the unit tests, navigate to the root directory of the project and execute the following command:
+
+```bash
+pdm run pytest tests/
+```
+
+By following these guidelines, you'll help us maintain a robust and reliable codebase. Thank you for contributing!
