@@ -128,7 +128,8 @@ def check_alert_sent(db_name: str, table_name: str, gameid: str):
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(f"SELECT alert_sent FROM {table_name} WHERE gameid = '{gameid}';")
-    alert_sent = cursor.fetchone() is not None
+    results = cursor.fetchone()
+    alert_sent = results is not None and results[0]
     connection.close()
     return alert_sent
 
