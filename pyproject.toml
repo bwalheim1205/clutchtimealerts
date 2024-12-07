@@ -22,5 +22,5 @@ tests = [
 select = ["E", "F"]
 ignore = ["F401", "E501"]
 [tool.pdm]
-distribution = false
+distribution = true
 
