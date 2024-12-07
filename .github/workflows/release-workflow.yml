@@ -81,8 +81,9 @@ jobs:
 
       - name: Build and publish package
         env:
-          PYPI_USERNAME: __token__
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          PDM_PYPI_USERNAME: __token__
+          PDM_PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
+          echo "PYPI_PASSWORD=$PDM_PYPI_PASSWORD"
           pdm build
           pdm publish --repository pypi
