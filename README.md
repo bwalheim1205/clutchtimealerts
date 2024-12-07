@@ -1,6 +1,7 @@
 # ClutchTimeAlerts - NBA Clutch Time Alert Service
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![PyPI version](https://badge.fury.io/py/clutchtimealerts.svg)](https://badge.fury.io/py/clutchtimealerts)
 
 A service that tracks ongoing NBA games and sends alerts when games enter "clutch time"—the last five minutes of the fourth quarter or overtime when the point difference is five points or fewer. The serivce monitors live game data and sends notifications via configured messaging platforms (such as GroupMe, Slack, etc.) to keep you informed of the most intense moments.
 
@@ -25,7 +26,13 @@ There are two different supported installation types: Python and Docker.
 
 **Python**
 
-To install the python package, first clone the repository then use pip to install it.
+To install the python package you can install it from [PYPI](https://pypi.org/project/clutchtimealerts/)
+
+```sh
+pip install clutchtimealerts
+```
+
+Alertnatively you can clone the repository then install it directly.
  
 ```sh
 git clone git@github.com:bwalheim1205/clutchtimealerts.git
@@ -33,9 +40,17 @@ cd clutchtimealerts
 pip install clutchtimealerts
 ```
 
-To install via docker, first clone the repository then build using the Dockerfile.
-
 **Docker**
+
+To install via docker, you can pull image from [Docker Hub](https://hub.docker.com/repository/docker/bwalheim1205/clutchtimealerts):
+
+```sh
+docker pull bwalheim1205/clutchtimealerts
+```
+
+
+Alertnatively you can build the image from source:
+
 
 ```sh
 git clone git@github.com:bwalheim1205/clutchtimealerts.git
