@@ -16,6 +16,7 @@ We currently support the following notification types out of the box:
 
 - **GroupMe** 
 - **Slack**
+- **Ntfy**
 - **Twilio** (SMS)
 
 On our road map we want to expand the supported notification types. If there's a type you want to see supported add an issue or submit a PR for review.
@@ -78,7 +79,7 @@ notifications:
     config:
       channel: "#general"
       token: "<slack-api-token>"
-- type: Twilio
+  - type: Twilio
     config:
       account_sid: "<twilio-accout-sid>"
       auth_token: "<twilio-auth-token>"
@@ -86,6 +87,11 @@ notifications:
       to: 
         - "+14155551212"
         - "+14155551212"
+  - type: Ntfy
+    config:
+      host: <ntfy host>
+      topic: nba_alerts
+      token: <Ntfy auth token>
 ```
 
 ### YAML Fields
