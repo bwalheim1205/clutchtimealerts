@@ -69,8 +69,7 @@ of a configuration file
 **Example Configuration**
 
 ```yaml
-db_file_path: clutchtime.db
-db_table_name: clutchgames
+db_url: clutchtime.db
 notifications:
   - type: GroupMe
     config:
@@ -96,9 +95,7 @@ notifications:
 
 ### YAML Fields
 
-**db_file_path** (__Optional__): Path to sqllite database to store game data. Defaults to clutchtime.db
-
-**db_table_name** (__Optional__):  SQLite table name to store data in. Default to clutchgames
+**db_url** (__Optional__): DB url to sqlite3 database. Defaults to sqlite:///clutchtime.db
 
 **notifications**: List of notification configs
 -  **type**: class name or common name of the alert type

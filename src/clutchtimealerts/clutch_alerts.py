@@ -5,8 +5,7 @@ import logging
 from clutchtimealerts.scraper.live_scores import NBAScoreScraper
 from clutchtimealerts.notifications.base import Notification
 from clutchtimealerts.db_utils import (
-    TABLE_NAME,
-    EXPECTED_COLUMNS,
+    get_engine,
     check_and_recreate_table,
     clear_table,
     insert_game,
@@ -23,13 +22,11 @@ class ClutchAlertsService:
     def __init__(
         self,
         notifications: list[Notification],
-        db_path: str = "clutchtime.db",
-        db_table_name: str = TABLE_NAME,
+        db_url: str = "sqlite:///clutchtime.db",
     ) -> None:
         self.scraper = NBAScoreScraper()
         self.notifications = notifications
-        self.db_path = db_path
-        self.db_table_name = db_table_name
+        self.db_url = db_url
 
     def send_clutch_alert(self, message) -> None:
         """
@@ -134,7 +131,8 @@ class ClutchAlertsService:
         None
         """
         # Create the database
-        check_and_recreate_table(self.db_path, self.db_table_name, EXPECTED_COLUMNS)
+        Session, engine = get_engine(self.db_url)
+        check_and_recreate_table(engine)
         while True:
             # Fetch live games
             try:
@@ -159,8 +157,7 @@ class ClutchAlertsService:
                         f"Overtime Game detected: OT{overtime_number} {awayTeam} v {homeTeam} - checking db"
                     )
                     if not check_overtime_alert_sent(
-                        self.db_path,
-                        self.db_table_name,
+                        Session,
                         game["gameId"],
                         overtime_number,
                     ):
@@ -171,35 +168,27 @@ class ClutchAlertsService:
                             f"""OT{overtime_number} Alert\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
                         # Update both tables
-                        update_overtime_number(
-                            self.db_path, self.db_table_name, game["gameId"]
-                        )
-                        update_alert_sent(
-                            self.db_path, self.db_table_name, game["gameId"]
-                        )
+                        update_overtime_number(Session, game["gameId"])
+                        update_alert_sent(Session, game["gameId"])
                 elif self.isCluthTime(game):
                     watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     logger.info(
                         f"Clutch Game detected: {awayTeam} v {homeTeam} - checking db"
                     )
-                    if not check_alert_sent(
-                        self.db_path, self.db_table_name, game["gameId"]
-                    ):
-                        insert_game(self.db_path, self.db_table_name, game["gameId"])
+                    if not check_alert_sent(Session, game["gameId"]):
+                        insert_game(Session, game["gameId"])
                         logger.info(
                             f"Alerting for Clutch Game: {awayTeam} v {homeTeam}"
                         )
                         self.send_clutch_alert(
                             f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
                         )
-                        update_alert_sent(
-                            self.db_path, self.db_table_name, game["gameId"]
-                        )
+                        update_alert_sent(Session, game["gameId"])
 
             # Sleep for 2 hours if there are no live games
             if len(games) == 0:
                 logger.info("No live games. Sleeping for 2 hours...")
-                clear_table(self.db_path, self.db_table_name)
+                clear_table(Session)
                 time.sleep(7200)
             # Otherwise sleep for 30 seconds
             else:

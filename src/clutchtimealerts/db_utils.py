@@ -1,185 +1,275 @@
-import sqlite3
+from sqlalchemy import (
+    create_engine,
+    inspect,
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Boolean,
+)
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.exc import SQLAlchemyError
+import datetime
+import logging
 
-# Usage example
+logger = logging.getLogger("clutchtimealerts")
+
 TABLE_NAME = "clutchgames"
-EXPECTED_COLUMNS = [
-    ("id", "INTEGER PRIMARY KEY"),
-    ("gameid", "TEXT NOT NULL"),
-    ("alert_time", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"),
-    ("alert_sent", "BOOLEAN NOT NULL DEFAULT 0"),
-    ("overtime_alert_number", "INTEGER NOT NULL DEFAULT 0"),
-]
 
 
-def check_and_recreate_table(
-    db_name: str, table_name: str, expected_columns: list[tuple[str, str]]
-) -> True:
-    """
-    Checks if a table exists in a SQLite database and recreates it if the schema does not match the expected columns.
+class Base(DeclarativeBase):
+    pass
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to check or recreate.
-        expected_columns (list[tuple]): A list of tuples, where each tuple is (column_name, column_type).
 
-    Returns:
-        None
-    """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
+class ClutchGame(Base):
+    __tablename__ = TABLE_NAME
 
-    # Check if table exists
-    cursor.execute(
-        f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+    id = Column(Integer, primary_key=True)
+    gameid = Column(String, nullable=False)
+    alert_time = Column(
+        DateTime, nullable=False, default=datetime.datetime.now(datetime.timezone.utc)
     )
-    table_exists = cursor.fetchone() is not None
-    if table_exists:
-        # Get the current schema of the table
-        cursor.execute(f"PRAGMA table_info({table_name});")
-        current_schema = [(row[1], row[2]) for row in cursor.fetchall()]
-
-        # Check if the schema matches the expected schema
-        if current_schema != expected_columns:
-            cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
-        else:
-            connection.close()
-            return
-
-    # Recreate the table with the correct schema
-    columns_definition = ", ".join(f"{col} {dtype}" for col, dtype in expected_columns)
-    cursor.execute(f"CREATE TABLE {table_name} ({columns_definition});")
-
-    # Commit changes and close the connection
-    connection.commit()
-    connection.close()
+    alert_sent = Column(Boolean, nullable=False, default=False)
+    overtime_alert_number = Column(Integer, nullable=False, default=0)
 
 
-def clear_table(db_name: str, table_name: str):
+def get_engine(db_url: str):
     """
-    Clear all rows from the given table in the given database.
+    Return a sqlalchemy Engine and Session factory based on the provided database url.
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to clear.
+    Parameters
+    ----------
+    db_url : str
+        The database url to use.
 
-    Returns:
-        None
+    Returns
+    -------
+    tuple[Session, Engine]
+        A sqlalchemy Session factory and Engine instance.
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"DELETE FROM {table_name};")
-    connection.commit()
-    connection.close()
+    engine = create_engine(db_url)
+    Session = sessionmaker(bind=engine)
+    return Session, engine
 
 
-def insert_game(db_name: str, table_name: str, gameid: str):
+def check_and_recreate_table(engine):
     """
-    Insert a new row into the given table in the given database.
+    Check if the ClutchGame table exists in the database, and if not, create it.
+    If the table does exist, compare the current schema with the expected schema.
+    If the schemas differ, drop the table and recreate it.
 
-    The new row will have the given gameid and the alert_sent column will be set to 0.
-
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to insert into.
-        gameid (str): The gameid to insert.
-
-    Returns:
-        None
+    Parameters
+    ----------
+    engine : Engine
+        The sqlalchemy Engine instance to use.
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"INSERT INTO {table_name} (gameid) VALUES ('{gameid}');")
-    connection.commit()
-    connection.close()
+    inspector = inspect(engine)
+
+    # Check if the table exists
+    if not inspector.has_table(ClutchGame.__tablename__):
+        logger.info("Table 'clutchgames' does not exist. Creating the table...")
+        Base.metadata.create_all(engine)
+        return
+
+    # Compare the schemas
+    current_columns = {
+        column["name"]: column["type"]
+        for column in inspector.get_columns(ClutchGame.__tablename__)
+    }
+    expected_columns = {
+        column.name: column.type for column in ClutchGame.__table__.columns
+    }
+    if current_columns != expected_columns:
+        logger.warning("Schema mismatch detected. Dropping the 'clutchgames' table...")
+        ClutchGame.__table__.drop(engine)
+        Base.metadata.create_all(engine)
+        logger.debug("Table dropped and recreated.")
+
+    try:
+        Base.metadata.create_all(engine)
+    except SQLAlchemyError as e:
+        logger.error(f"Error creating tables: {e}")
 
 
-def update_alert_sent(db_name: str, table_name: str, gameid: str):
+def clear_table(Session):
     """
-    Update the alert_sent column to 1 for the given
-    gameid in the given table and database.
+    Clear all records from the ClutchGame table in the database.
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to update.
-        gameid (str): The gameid to update.
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
 
-    Returns:
-        None
+    Returns
+    -------
+    None
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"UPDATE {table_name} SET alert_sent = 1 WHERE gameid = '{gameid}';")
-    connection.commit()
-    connection.close()
+
+    session = Session()
+    try:
+        session.query(ClutchGame).delete()
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(f"Error clearing table: {e}")
+    finally:
+        session.close()
 
 
-def check_alert_sent(db_name: str, table_name: str, gameid: str):
+def insert_game(Session, gameid: str):
     """
-    Check if the alert has been sent for the given gameid in the specified table and database.
+    Insert a new game into the database.
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to check.
-        gameid (str): The gameid to check.
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
+    gameid : str
+        The game ID to insert.
 
-    Returns:
-        bool: True if the alert has been sent (alert_sent is not None), otherwise False.
+    Returns
+    -------
+    None
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"SELECT alert_sent FROM {table_name} WHERE gameid = '{gameid}';")
-    results = cursor.fetchone()
-    alert_sent = results is not None and results[0]
-    connection.close()
-    return alert_sent
+    session = Session()
+    try:
+        new_game = ClutchGame(gameid=gameid)
+        session.add(new_game)
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(f"Error inserting game: {e}")
+    finally:
+        session.close()
 
 
-def check_overtime_alert_sent(
-    db_name: str, table_name: str, gameid: str, overtime_number: int
-):
+def update_alert_sent(Session, gameid: str):
     """
-    Check if the alert has been sent for the given gameid in the specified table and database.
+    Update the alert_sent status for a given game in the database.
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to check.
-        gameid (str): The gameid to check.
-        overtime_number (int): The overtime number to check
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
+    gameid : str
+        The unique identifier of the game for which the alert_sent status should be updated.
 
-    Returns:
-        bool: True if the alert has been sent (alert_sent is not None), otherwise False.
+    Returns
+    -------
+    None
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"""
-                   SELECT overtime_alert_number FROM {table_name} 
-                   WHERE gameid = '{gameid}' AND 
-                   overtime_alert_number = {overtime_number};
-                   """)
-    alert_sent = cursor.fetchone() is not None
-    connection.close()
-    return alert_sent
+
+    session = Session()
+    try:
+        game = session.query(ClutchGame).filter_by(gameid=gameid).first()
+        if game:
+            game.alert_sent = True
+            session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(f"Error updating alert_sent: {e}")
+    finally:
+        session.close()
 
 
-def update_overtime_number(db_name: str, table_name: str, gameid: str):
+def check_alert_sent(Session, gameid: str) -> bool:
     """
-    Increament the overtime alert number for the given gameid in the specified table and database.
+    Check if the alert_sent status for a given game in the database is True.
 
-    Args:
-        db_name (str): The name of the SQLite database file.
-        table_name (str): The name of the table to update.
-        gameid (str): The gameid to update.
-        overtime_number (int): The overtime number to increment by.
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
+    gameid : str
+        The unique identifier of the game for which the alert_sent status should be checked.
 
-    Returns:
-        None
+    Returns
+    -------
+    bool
+        The alert_sent status of the given game in the database.
     """
-    connection = sqlite3.connect(db_name)
-    cursor = connection.cursor()
-    cursor.execute(f"""
-                   UPDATE {table_name} 
-                   SET overtime_alert_number = overtime_alert_number + 1
-                   WHERE gameid = '{gameid}';
-                   """)
-    connection.commit()
-    connection.close()
+
+    session = Session()
+    try:
+        game = session.query(ClutchGame).filter_by(gameid=gameid).first()
+        return game.alert_sent if game else False
+    except SQLAlchemyError as e:
+        logger.error(f"Error checking alert_sent: {e}")
+        return False
+    finally:
+        session.close()
+
+
+def check_overtime_alert_sent(Session, gameid: str, overtime_number: int) -> bool:
+    """
+    Check if the overtime_alert_number for a given game in the database is equal to the given overtime_number.
+
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
+    gameid : str
+        The unique identifier of the game for which the alert_sent status should be checked.
+    overtime_number : int
+        The overtime alert number to check against.
+
+    Returns
+    -------
+    bool
+        True if the overtime_alert_number is equal to the given overtime_number, otherwise False.
+    """
+    session = Session()
+    try:
+        game = (
+            session.query(ClutchGame)
+            .filter_by(gameid=gameid, overtime_alert_number=overtime_number)
+            .first()
+        )
+        return game is not None
+    except SQLAlchemyError as e:
+        logger.error(f"Error checking overtime alert: {e}")
+        return False
+    finally:
+        session.close()
+
+
+def update_overtime_number(Session, gameid: str):
+    """
+    Increment the overtime_alert_number for a given game in the database.
+
+    Parameters
+    ----------
+    Session : sqlalchemy.orm.session.Session
+        The sqlalchemy Session factory to use.
+    gameid : str
+        The unique identifier of the game for which the overtime_alert_number should be incremented.
+
+    Returns
+    -------
+    None
+    """
+    session = Session()
+    try:
+        game = session.query(ClutchGame).filter_by(gameid=gameid).first()
+        if game:
+            game.overtime_alert_number += 1
+            session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(f"Error updating overtime number: {e}")
+    finally:
+        session.close()
+
+
+if __name__ == "__main__":
+    DATABASE_URL = "sqlite:///example.db"
+    Session, engine = get_engine(DATABASE_URL)
+
+    # Ensure the table exists
+    check_and_recreate_table(engine)
+
+    # Example operations
+    insert_game(Session, "game123")
+    print(check_alert_sent(Session, "game123"))
+    update_alert_sent(Session, "game123")
+    print(check_alert_sent(Session, "game123"))

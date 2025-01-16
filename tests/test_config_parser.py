@@ -19,8 +19,7 @@ class MockNotification(Notification):
 def sample_config():
     """Fixture for a sample configuration YAML."""
     return """
-    db_file_path: "test.db"
-    db_table_name: "test_table"
+    db_url: "test.db"
     notifications:
       - type: email
         config:
@@ -56,8 +55,7 @@ def test_parse_config_valid_config(
 ):
     """Test parsing a valid configuration file."""
     mock_yaml_load.return_value = {
-        "db_file_path": "test.db",
-        "db_table_name": "test_table",
+        "db_url": "test.db",
         "notifications": [
             {"type": "email", "config": {"recipient": "test@example.com"}},
             {"type": "sms", "config": {"phone_number": "+123456789"}},
@@ -72,8 +70,7 @@ def test_parse_config_valid_config(
     parser.parse_config()
 
     # Check database path and table name
-    assert parser.db_file_path == "test.db"
-    assert parser.db_table_name == "test_table"
+    assert parser.db_url == "test.db"
 
     # Check notifications
     assert len(parser.notifications) == 2

@@ -48,7 +48,6 @@ if __name__ == "__main__":
 
     alert_service = ClutchAlertsService(
         notifications=parser.notifications,
-        db_path=parser.db_file_path,
-        db_table_name=parser.db_table_name,
+        db_url=parser.db_url,
     )
     alert_service.run()
