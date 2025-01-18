@@ -98,8 +98,8 @@ def format_message(game: dict, fstring: str) -> str:
         # Game Info
         GAME_ID=game["gameId"],
         GAME_CLOCK=game["gameClock"],
-        HOME_SCORE=game["homeTeam"]["score"],
-        AWAY_SCORE=game["awayTeam"]["score"],
+        HOME_TEAM_SCORE=game["homeTeam"]["score"],
+        AWAY_TEAM_SCORE=game["awayTeam"]["score"],
         GAME_STATUS_TEXT=game["gameStatusText"],
         OT_NUMBER=game["period"] - 4,
         # Stream Info

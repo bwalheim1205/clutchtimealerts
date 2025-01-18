@@ -72,8 +72,8 @@ def test_parse_config_valid_config(
     # Check database path and table name
     assert parser.db_url == "test.db"
 
-    # Check notifications
-    assert len(parser.notifications) == 2
+    # Check notification_configs
+    assert len(parser.notification_configs) == 2
     assert classname_dict["email"].call_count == 1
     assert classname_dict["sms"].call_count == 1
 
@@ -109,8 +109,8 @@ def test_parse_config_invalid_notification_type(
     except Exception:
         assert False
 
-    # Check that no notifications are created
-    assert len(parser.notifications) == 0
+    # Check that no notification_configs are created
+    assert len(parser.notification_configs) == 0
 
     # Check that the logger was called with a warning
     mock_warning.assert_called_with(
@@ -178,8 +178,7 @@ def test_parse_config_invalid_notification_config(
         assert False
 
     # Check that no notifications are created
-    print(parser.notifications)
-    assert len(parser.notifications) == 0
+    assert len(parser.notification_configs) == 0
 
     # Check that the logger was called with the correct warning
     mock_warning.assert_any_call(
