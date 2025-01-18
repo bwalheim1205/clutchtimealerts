@@ -22,8 +22,7 @@ class ConfigParser:
             config = yaml.safe_load(f)
 
         # Parse database file path
-        self.db_file_path = config.get("db_file_path", "clutchtime.db")
-        self.db_table_name = config.get("db_table_name", TABLE_NAME)
+        self.db_url = config.get("db_url", "sqlite:///clutchtime.db")
 
         notification_configs = config.get("notifications", [])
         self.notifications = []

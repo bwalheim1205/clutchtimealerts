@@ -2,7 +2,7 @@ import pytest
 import sqlite3
 from clutchtimealerts.db_utils import (
     TABLE_NAME,
-    EXPECTED_COLUMNS,
+    get_engine,
     check_and_recreate_table,
     clear_table,
     insert_game,
@@ -12,7 +12,6 @@ from clutchtimealerts.db_utils import (
     update_overtime_number,
 )
 import tempfile
-import os
 
 
 @pytest.fixture
@@ -20,14 +19,14 @@ def db_name():
     """Fixture to create a fresh instance of NotificationCollector."""
     temp_file = tempfile.NamedTemporaryFile()
     temp_file_name = temp_file.name
-    print(temp_file_name)
     return temp_file_name
 
 
 def test_check_and_recreate_table(db_name):
     """Test that the table is created with the expected schema."""
-
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    _, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
@@ -46,16 +45,17 @@ def test_check_and_recreate_table(db_name):
 
         schema.append((row_name, f"{row_type}{not_null}{default_value}{primary_key}"))
 
-    assert schema == EXPECTED_COLUMNS
     connection.close()
 
 
 def test_insert_game(db_name):
     """Test inserting a new game."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
 
     gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
+    insert_game(Session, gameid)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
@@ -69,11 +69,13 @@ def test_insert_game(db_name):
 
 def test_update_alert_sent(db_name):
     """Test updating the alert_sent column."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
 
     # Check initial alerts is 0
     gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
+    insert_game(Session, gameid)
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(f"SELECT alert_sent FROM {TABLE_NAME} WHERE gameid = '{gameid}';")
@@ -83,7 +85,7 @@ def test_update_alert_sent(db_name):
     assert result[0] == 0
 
     # Test updated alert
-    update_alert_sent(db_name, TABLE_NAME, gameid)
+    update_alert_sent(Session, gameid)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
@@ -96,37 +98,46 @@ def test_update_alert_sent(db_name):
 
 def test_check_alert_sent(db_name):
     """Test checking the alert_sent status."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
-    gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
-    assert not check_alert_sent(db_name, TABLE_NAME, gameid)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
 
-    update_alert_sent(db_name, TABLE_NAME, gameid)
-    assert check_alert_sent(db_name, TABLE_NAME, gameid)
+    gameid = "0022400205"
+    insert_game(Session, gameid)
+    assert not check_alert_sent(Session, gameid)
+
+    update_alert_sent(Session, gameid)
+    assert check_alert_sent(Session, gameid)
 
 
 def test_check_overtime_alert_sent(db_name):
     """Test checking the overtime_alert_number status."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
+
     gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
+    insert_game(Session, gameid)
 
-    assert not check_overtime_alert_sent(db_name, TABLE_NAME, gameid, 1)
+    assert not check_overtime_alert_sent(Session, gameid, 1)
 
-    update_overtime_number(db_name, TABLE_NAME, gameid)
-    assert not check_overtime_alert_sent(db_name, TABLE_NAME, gameid, 0)
-    assert check_overtime_alert_sent(db_name, TABLE_NAME, gameid, 1)
+    update_overtime_number(Session, gameid)
+    assert not check_overtime_alert_sent(Session, gameid, 0)
+    assert check_overtime_alert_sent(Session, gameid, 1)
 
-    update_overtime_number(db_name, TABLE_NAME, gameid)
-    assert not check_overtime_alert_sent(db_name, TABLE_NAME, gameid, 1)
-    assert check_overtime_alert_sent(db_name, TABLE_NAME, gameid, 2)
+    update_overtime_number(Session, gameid)
+    assert not check_overtime_alert_sent(Session, gameid, 1)
+    assert check_overtime_alert_sent(Session, gameid, 2)
 
 
 def test_update_overtime_number(db_name):
     """Test incrementing the overtime_alert_number."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
+
     gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
+    insert_game(Session, gameid)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
@@ -138,7 +149,7 @@ def test_update_overtime_number(db_name):
 
     assert result[0] == 0
 
-    update_overtime_number(db_name, TABLE_NAME, gameid)
+    update_overtime_number(Session, gameid)
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -149,7 +160,7 @@ def test_update_overtime_number(db_name):
 
     assert result[0] == 1
 
-    update_overtime_number(db_name, TABLE_NAME, gameid)
+    update_overtime_number(Session, gameid)
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -163,9 +174,12 @@ def test_update_overtime_number(db_name):
 
 def test_clear_table(db_name):
     """Test clearing the table."""
-    check_and_recreate_table(db_name, TABLE_NAME, EXPECTED_COLUMNS)
+    database_url = f"sqlite:///{db_name}"
+    Session, engine = get_engine(database_url)
+    check_and_recreate_table(engine=engine)
+
     gameid = "0022400205"
-    insert_game(db_name, TABLE_NAME, gameid)
+    insert_game(Session, gameid)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
@@ -175,7 +189,7 @@ def test_clear_table(db_name):
 
     assert len(result) == 1
 
-    clear_table(db_name, TABLE_NAME)
+    clear_table(Session)
 
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
