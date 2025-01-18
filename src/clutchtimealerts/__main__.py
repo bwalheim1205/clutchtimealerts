@@ -1,5 +1,4 @@
 from clutchtimealerts.clutch_alerts import ClutchAlertsService
-from clutchtimealerts.notifications.groupme import GroupMeNotification
 from clutchtimealerts.config_parser import ConfigParser
 from clutchtimealerts.notification_collector import NotificationCollector
 
@@ -47,7 +46,7 @@ if __name__ == "__main__":
     parser.parse_config()
 
     alert_service = ClutchAlertsService(
-        notifications=parser.notifications,
+        notification_configs=parser.notification_configs,
         db_url=parser.db_url,
     )
     alert_service.run()

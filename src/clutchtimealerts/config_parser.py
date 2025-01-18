@@ -1,8 +1,12 @@
 from clutchtimealerts.db_utils import TABLE_NAME
+from clutchtimealerts.notifications.base import NotificationConfig
 import yaml
 import logging
 
 logger = logging.getLogger("clutchtimealerts")
+
+DEFAULT_NOTIFICATION_FORMAT = "Clutch Game\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
+DEFAULT_OT_FORMAT = "OT{OT_NUMBER} Alert\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
 
 
 class ConfigParser:
@@ -24,9 +28,15 @@ class ConfigParser:
         # Parse database file path
         self.db_url = config.get("db_url", "sqlite:///clutchtime.db")
 
-        notification_configs = config.get("notifications", [])
-        self.notifications = []
-        for notify_config in notification_configs:
+        # Parse Notifcation Format
+        notification_format = config.get(
+            "notification_format", DEFAULT_NOTIFICATION_FORMAT
+        )
+        ot_format = config.get("ot_format", DEFAULT_OT_FORMAT)
+
+        notification_yaml = config.get("notifications", [])
+        self.notification_configs = []
+        for notify_config in notification_yaml:
             if "type" not in notify_config:
                 raise ValueError("Notification type must be specified in config file")
 
@@ -54,7 +64,15 @@ class ConfigParser:
                 )
                 continue
 
-            self.notifications.append(notification_instance)
+            # Create notification config
+            notification_config = NotificationConfig(
+                notification=notification_instance,
+                notification_format=notify_config.get(
+                    "notification_format", notification_format
+                ),
+                ot_format=notify_config.get("ot_format", ot_format),
+            )
+            self.notification_configs.append(notification_config)
 
-        if len(self.notifications) == 0:
+        if len(self.notification_configs) == 0:
             raise ValueError("No notifications found in config file")
