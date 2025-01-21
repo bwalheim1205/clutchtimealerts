@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import patch, mock_open, MagicMock
-from clutchtimealerts.config_parser import ConfigParser
+from clutchtimealerts.config_parser import (
+    ConfigParser,
+    DEFAULT_NOTIFICATION_FORMAT,
+    DEFAULT_OT_FORMAT,
+)
 from clutchtimealerts.notifications.base import Notification
 
 
@@ -184,3 +188,118 @@ def test_parse_config_invalid_notification_config(
     mock_warning.assert_any_call(
         "Failed to create notification of type mock_notification: Mocked import error ... skipping"
     )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_missing_db_url(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with missing db_url."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.db_url == "sqlite:///clutchtime.db"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_default_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert (
+        parser.notification_configs[0].notification_format
+        == DEFAULT_NOTIFICATION_FORMAT
+    )
+    assert (
+        parser.notification_configs[1].notification_format
+        == DEFAULT_NOTIFICATION_FORMAT
+    )
+    assert parser.notification_configs[0].ot_format == DEFAULT_OT_FORMAT
+    assert parser.notification_configs[1].ot_format == DEFAULT_OT_FORMAT
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_global_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with global notifications."""
+    mock_yaml_load.return_value = {
+        "notification_format": "test_format",
+        "ot_format": "test_ot_format",
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].notification_format == "test_format"
+    assert parser.notification_configs[1].notification_format == "test_format"
+    assert parser.notification_configs[0].ot_format == "test_ot_format"
+    assert parser.notification_configs[1].ot_format == "test_ot_format"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_type_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with global notifications."""
+    mock_yaml_load.return_value = {
+        "notification_format": "test_format",
+        "ot_format": "test_ot_format",
+        "notifications": [
+            {
+                "type": "email",
+                "notification_format": "test_format2",
+                "config": {"recipient": "test@example.com"},
+            },
+            {
+                "type": "sms",
+                "ot_format": "test_ot_format2",
+                "config": {"phone_number": "+123456789"},
+            },
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].notification_format == "test_format2"
+    assert parser.notification_configs[1].notification_format == "test_format"
+    assert parser.notification_configs[0].ot_format == "test_ot_format"
+    assert parser.notification_configs[1].ot_format == "test_ot_format2"
