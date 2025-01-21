@@ -1,5 +1,5 @@
-from clutchtimealerts.db_utils import TABLE_NAME
 from clutchtimealerts.notifications.base import NotificationConfig
+from clutchtimealerts.format_utils import format_message, mock_game
 import yaml
 import logging
 
@@ -34,7 +34,7 @@ class ConfigParser:
         )
         ot_format = config.get("ot_format", DEFAULT_OT_FORMAT)
 
-        notification_yaml = config.get("notifications", [])
+        notification_yaml: list[dict] = config.get("notifications", [])
         self.notification_configs = []
         for notify_config in notification_yaml:
             if "type" not in notify_config:
@@ -61,6 +61,18 @@ class ConfigParser:
             except Exception as e:
                 logger.warning(
                     f"Failed to create notification of type {notifiction_type}: {e} ... skipping"
+                )
+                continue
+
+            try:
+                format_message(
+                    mock_game,
+                    notify_config.get("notification_format", notification_format),
+                )
+                format_message(mock_game, notify_config.get("ot_format", ot_format))
+            except Exception as e:
+                logger.warning(
+                    f"Failed to create formatter for notification of type {notifiction_type}: {e} ... skipping"
                 )
                 continue
 

@@ -275,7 +275,7 @@ def test_parse_config_global_notification_format(
 def test_parse_config_type_notification_format(
     mock_open_file, mock_yaml_load, classname_dict, common_name_dict
 ):
-    """Test config with global notifications."""
+    """Test config with type specific notification formats."""
     mock_yaml_load.return_value = {
         "notification_format": "test_format",
         "ot_format": "test_ot_format",
@@ -303,3 +303,69 @@ def test_parse_config_type_notification_format(
     assert parser.notification_configs[1].notification_format == "test_format"
     assert parser.notification_configs[0].ot_format == "test_ot_format"
     assert parser.notification_configs[1].ot_format == "test_ot_format2"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+@patch("clutchtimealerts.config_parser.logger.warning")
+def test_parse_config_invalid_notification_format(
+    mock_warning, mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {
+                "type": "email",
+                "notification_format": "{NOT_REAL_VALUE}",
+                "config": {"recipient": "test@example.com"},
+            },
+        ],
+    }
+
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    try:
+        parser.parse_config()
+    except Exception:
+        assert True
+    else:
+        assert False
+
+    mock_warning.assert_called_once_with(
+        "Failed to create formatter for notification of type email: 'NOT_REAL_VALUE' ... skipping"
+    )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+@patch("clutchtimealerts.config_parser.logger.warning")
+def test_parse_config_invalid_ot_format(
+    mock_warning, mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {
+                "type": "email",
+                "ot_format": "{NOT_REAL_VALUE}",
+                "config": {"recipient": "test@example.com"},
+            },
+        ],
+    }
+
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    try:
+        parser.parse_config()
+    except Exception:
+        assert True
+    else:
+        assert False
+
+    mock_warning.assert_called_once_with(
+        "Failed to create formatter for notification of type email: 'NOT_REAL_VALUE' ... skipping"
+    )

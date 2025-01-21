@@ -78,6 +78,7 @@ mock_game = {
         },
     },
     "pbOdds": {"team": None, "odds": 0.0, "suspended": 0},
+    "nbaComStream": "https://www.nba.com/game/TOR-vs-MIL-0022400580?watchLive=true",
 }
 
 
