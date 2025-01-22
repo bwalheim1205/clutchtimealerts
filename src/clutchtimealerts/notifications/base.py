@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 
 class Notification(ABC):
@@ -7,3 +8,10 @@ class Notification(ABC):
     @abstractmethod
     def send(self, message):
         pass
+
+
+@dataclass
+class NotificationConfig:
+    notification: Notification
+    notification_format: str
+    ot_format: str

@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import patch, mock_open, MagicMock
-from clutchtimealerts.config_parser import ConfigParser
+from clutchtimealerts.config_parser import (
+    ConfigParser,
+    DEFAULT_NOTIFICATION_FORMAT,
+    DEFAULT_OT_FORMAT,
+)
 from clutchtimealerts.notifications.base import Notification
 
 
@@ -72,8 +76,8 @@ def test_parse_config_valid_config(
     # Check database path and table name
     assert parser.db_url == "test.db"
 
-    # Check notifications
-    assert len(parser.notifications) == 2
+    # Check notification_configs
+    assert len(parser.notification_configs) == 2
     assert classname_dict["email"].call_count == 1
     assert classname_dict["sms"].call_count == 1
 
@@ -109,8 +113,8 @@ def test_parse_config_invalid_notification_type(
     except Exception:
         assert False
 
-    # Check that no notifications are created
-    assert len(parser.notifications) == 0
+    # Check that no notification_configs are created
+    assert len(parser.notification_configs) == 0
 
     # Check that the logger was called with a warning
     mock_warning.assert_called_with(
@@ -178,10 +182,190 @@ def test_parse_config_invalid_notification_config(
         assert False
 
     # Check that no notifications are created
-    print(parser.notifications)
-    assert len(parser.notifications) == 0
+    assert len(parser.notification_configs) == 0
 
     # Check that the logger was called with the correct warning
     mock_warning.assert_any_call(
         "Failed to create notification of type mock_notification: Mocked import error ... skipping"
+    )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_missing_db_url(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with missing db_url."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.db_url == "sqlite:///clutchtime.db"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_default_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert (
+        parser.notification_configs[0].notification_format
+        == DEFAULT_NOTIFICATION_FORMAT
+    )
+    assert (
+        parser.notification_configs[1].notification_format
+        == DEFAULT_NOTIFICATION_FORMAT
+    )
+    assert parser.notification_configs[0].ot_format == DEFAULT_OT_FORMAT
+    assert parser.notification_configs[1].ot_format == DEFAULT_OT_FORMAT
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_global_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with global notifications."""
+    mock_yaml_load.return_value = {
+        "notification_format": "test_format",
+        "ot_format": "test_ot_format",
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].notification_format == "test_format"
+    assert parser.notification_configs[1].notification_format == "test_format"
+    assert parser.notification_configs[0].ot_format == "test_ot_format"
+    assert parser.notification_configs[1].ot_format == "test_ot_format"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_config_type_notification_format(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with type specific notification formats."""
+    mock_yaml_load.return_value = {
+        "notification_format": "test_format",
+        "ot_format": "test_ot_format",
+        "notifications": [
+            {
+                "type": "email",
+                "notification_format": "test_format2",
+                "config": {"recipient": "test@example.com"},
+            },
+            {
+                "type": "sms",
+                "ot_format": "test_ot_format2",
+                "config": {"phone_number": "+123456789"},
+            },
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].notification_format == "test_format2"
+    assert parser.notification_configs[1].notification_format == "test_format"
+    assert parser.notification_configs[0].ot_format == "test_ot_format"
+    assert parser.notification_configs[1].ot_format == "test_ot_format2"
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+@patch("clutchtimealerts.config_parser.logger.warning")
+def test_parse_config_invalid_notification_format(
+    mock_warning, mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {
+                "type": "email",
+                "notification_format": "{NOT_REAL_VALUE}",
+                "config": {"recipient": "test@example.com"},
+            },
+        ],
+    }
+
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    try:
+        parser.parse_config()
+    except Exception:
+        assert True
+    else:
+        assert False
+
+    mock_warning.assert_called_once_with(
+        "Failed to create formatter for notification of type email: 'NOT_REAL_VALUE' ... skipping"
+    )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+@patch("clutchtimealerts.config_parser.logger.warning")
+def test_parse_config_invalid_ot_format(
+    mock_warning, mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {
+                "type": "email",
+                "ot_format": "{NOT_REAL_VALUE}",
+                "config": {"recipient": "test@example.com"},
+            },
+        ],
+    }
+
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    try:
+        parser.parse_config()
+    except Exception:
+        assert True
+    else:
+        assert False
+
+    mock_warning.assert_called_once_with(
+        "Failed to create formatter for notification of type email: 'NOT_REAL_VALUE' ... skipping"
     )

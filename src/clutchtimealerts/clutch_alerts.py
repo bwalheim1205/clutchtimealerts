@@ -3,7 +3,8 @@ import requests
 import logging
 
 from clutchtimealerts.scraper.live_scores import NBAScoreScraper
-from clutchtimealerts.notifications.base import Notification
+from clutchtimealerts.notifications.base import NotificationConfig
+from clutchtimealerts.format_utils import format_message
 from clutchtimealerts.db_utils import (
     get_engine,
     check_and_recreate_table,
@@ -21,33 +22,50 @@ logger = logging.getLogger("clutchtimealerts")
 class ClutchAlertsService:
     def __init__(
         self,
-        notifications: list[Notification],
+        notification_configs: list[NotificationConfig],
         db_url: str = "sqlite:///clutchtime.db",
     ) -> None:
         self.scraper = NBAScoreScraper()
-        self.notifications = notifications
+        self.notification_configs = notification_configs
         self.db_url = db_url
 
-    def send_clutch_alert(self, message) -> None:
+    def send_alert(self, game: dict, alert_type: str) -> None:
         """
         Send the given message as notification.
 
         Parameters
         ----------
-        message : str
-            The message to send to notification.
+        game: dict
+            The game json data to send as a message
+        alert_type : str
+            The type of message to send ("ot" or "clutch")
 
         Returns
         -------
         None
         """
-        logger.debug(f"Sending message: {message}")
-        for notification in self.notifications:
+        for notification_config in self.notification_configs:
+            # Format message
             try:
-                notification.send(message)
+                if alert_type == "ot":
+                    message = format_message(game, notification_config.ot_format)
+                elif alert_type == "clutch":
+                    message = format_message(
+                        game, notification_config.notification_format
+                    )
+            except Exception:
+                logger.error(
+                    f"Error formatting message for {notification_config.notification.__class__.__name__}"
+                )
+                continue
+
+            # Send message with notification
+            logger.debug(f"Sending message: {message}")
+            try:
+                notification_config.notification.send(message)
             except Exception as e:
                 logger.error(
-                    f"Error sending notification to {notification.__class__.__name__}: {e}"
+                    f"Error sending notification to {notification_config.notification.__class__.__name__}: {e}"
                 )
 
     def _get_minutes_from_clock(self, clock) -> int:
@@ -148,10 +166,10 @@ class ClutchAlertsService:
                 gameId = game["gameId"]
                 homeTeam = game["homeTeam"]["teamTricode"]
                 awayTeam = game["awayTeam"]["teamTricode"]
-                homeTeamScore = game["homeTeam"]["score"]
-                awayTeamScore = game["awayTeam"]["score"]
+                game["nbaComStream"] = (
+                    f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
+                )
                 if self.isOvertime(game):
-                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     overtime_number = game["period"] - 4
                     logger.info(
                         f"Overtime Game detected: OT{overtime_number} {awayTeam} v {homeTeam} - checking db"
@@ -164,14 +182,11 @@ class ClutchAlertsService:
                         logger.info(
                             f"Alerting for Overtime Game: OT{overtime_number} {awayTeam} v {homeTeam}"
                         )
-                        self.send_clutch_alert(
-                            f"""OT{overtime_number} Alert\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
-                        )
+                        self.send_alert(game, "ot")
                         # Update both tables
                         update_overtime_number(Session, game["gameId"])
                         update_alert_sent(Session, game["gameId"])
                 elif self.isCluthTime(game):
-                    watch_link = f"https://www.nba.com/game/{awayTeam}-vs-{homeTeam}-{gameId}?watchLive=true"
                     logger.info(
                         f"Clutch Game detected: {awayTeam} v {homeTeam} - checking db"
                     )
@@ -180,9 +195,7 @@ class ClutchAlertsService:
                         logger.info(
                             f"Alerting for Clutch Game: {awayTeam} v {homeTeam}"
                         )
-                        self.send_clutch_alert(
-                            f"""Clutch Game\n{homeTeam} {homeTeamScore} - {awayTeamScore} {awayTeam}\n{watch_link}"""
-                        )
+                        self.send_alert(game, "clutch")
                         update_alert_sent(Session, game["gameId"])
 
             # Sleep for 2 hours if there are no live games

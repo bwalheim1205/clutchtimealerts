@@ -70,6 +70,8 @@ of a configuration file
 
 ```yaml
 db_url: clutchtime.db
+notification_format: 
+
 notifications:
   - type: GroupMe
     config:
@@ -97,9 +99,45 @@ notifications:
 
 **db_url** (__Optional__): DB url to sqlite3 database. Defaults to sqlite:///clutchtime.db
 
+**notification_format** (__Optional__): fstring for formatting clutch alert message. Defaults to "Clutch Game\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
+
+**ot_format** (__Optional__): fstring for formatting ot alert messages. Defaults to "OT{OT_NUMBER} Alert\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
+
 **notifications**: List of notification configs
 -  **type**: class name or common name of the alert type
+-  **notification_format** (__Optional__): fstring for formatting clutch alert messages overwrites global level config.
+- **ot_format** (__Optional__): fstring for formatting ot alert messages. Overwrites global level config
 -  **config**: kwargs** for the alert classes
+
+### Format Langauge
+
+To create a format message we use python fstring format. Below is an example
+
+Example:
+
+```python
+"Clutch Game\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
+```
+
+Here's a list of valid values that can be used in fstring:
+
+- **HOME_TEAM_TRI**: Tricode for home team. Ex: PHI
+- **HOME_TEAM_CITY**: City for home team. Ex: Philadelphia
+- **HOME_TEAM_NAME**: Team name for home team. Ex: 76ers
+- **HOME_TEAM_WINS**: Total wins for home team this season
+- **HOME_TEAM_LOSSES**: Total losses for home team this season
+- **HOME_TEAM_SCORE**: Home teams score this game
+- **AWAY_TEAM_TRI**: Tricode for away team. Ex: BOS
+- **AWAY_TEAM_CITY**: City for away team. Ex: Boston
+- **AWAY_TEAM_NAME**: Team name for away team. Ex: Celtics
+- **AWAY_TEAM_WINS**: Total wins for away team this season
+- **AWAY_TEAM_LOSSES**: Total losses for away team this season
+- **AWAY_TEAM_SCORE**: Away teams score this game
+- **GAME_ID**: Id for the hame. Ex: 0022400580
+- **GAME_CLOCK**: Game Clock string. Ex: PT06M01.00S
+- **GAME_STATUS_TEXT**: String for game status. Ex:  "Q3 6:01"
+- **OT_NUMBER**: Number for OT Period
+- **NBA_COM_STREAM**: Link to watch game on nba.com
 
 
 ## Running Alert Service

@@ -1,6 +1,5 @@
-import os
 import pytest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock
 from clutchtimealerts.notifications.base import Notification
 from clutchtimealerts.notification_collector import NotificationCollector
 
