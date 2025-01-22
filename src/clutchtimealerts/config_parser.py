@@ -7,6 +7,38 @@ logger = logging.getLogger("clutchtimealerts")
 
 DEFAULT_NOTIFICATION_FORMAT = "Clutch Game\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
 DEFAULT_OT_FORMAT = "OT{OT_NUMBER} Alert\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
+NBA_TRICODES = {
+    "ATL",  # Atlanta Hawks
+    "BOS",  # Boston Celtics
+    "BKN",  # Brooklyn Nets
+    "CHA",  # Charlotte Hornets
+    "CHI",  # Chicago Bulls
+    "CLE",  # Cleveland Cavaliers
+    "DAL",  # Dallas Mavericks
+    "DEN",  # Denver Nuggets
+    "DET",  # Detroit Pistons
+    "GSW",  # Golden State Warriors
+    "HOU",  # Houston Rockets
+    "IND",  # Indiana Pacers
+    "LAC",  # Los Angeles Clippers
+    "LAL",  # Los Angeles Lakers
+    "MEM",  # Memphis Grizzlies
+    "MIA",  # Miami Heat
+    "MIL",  # Milwaukee Bucks
+    "MIN",  # Minnesota Timberwolves
+    "NOP",  # New Orleans Pelicans
+    "NYK",  # New York Knicks
+    "OKC",  # Oklahoma City Thunder
+    "ORL",  # Orlando Magic
+    "PHI",  # Philadelphia 76ers
+    "PHX",  # Phoenix Suns
+    "POR",  # Portland Trail Blazers
+    "SAC",  # Sacramento Kings
+    "SAS",  # San Antonio Spurs
+    "TOR",  # Toronto Raptors
+    "UTA",  # Utah Jazz
+    "WAS",  # Washington Wizards
+}
 
 
 class ConfigParser:
@@ -23,7 +55,7 @@ class ConfigParser:
     def parse_config(self) -> None:
         # Parse YAML Config
         with open(self.config_path, "r") as f:
-            config = yaml.safe_load(f)
+            config: dict = yaml.safe_load(f)
 
         # Parse database file path
         self.db_url = config.get("db_url", "sqlite:///clutchtime.db")
@@ -33,6 +65,7 @@ class ConfigParser:
             "notification_format", DEFAULT_NOTIFICATION_FORMAT
         )
         ot_format = config.get("ot_format", DEFAULT_OT_FORMAT)
+        team_config = set(config.get("nba_teams", NBA_TRICODES))
 
         notification_yaml: list[dict] = config.get("notifications", [])
         self.notification_configs = []
@@ -43,6 +76,15 @@ class ConfigParser:
             # Get YAML Config
             notifiction_type = notify_config["type"]
             class_config = notify_config["config"]
+            notification_team_config = NBA_TRICODES.intersection(
+                set(notify_config.get("nba_teams", team_config))
+            )
+
+            if len(notification_team_config) == 0:
+                logger.warning(
+                    f"No teams specified for notification type {notifiction_type} defaulting to all teams"
+                )
+                notification_team_config = NBA_TRICODES
 
             # Check that notification type exists
             if notifiction_type in self.classname_dict:
@@ -83,6 +125,7 @@ class ConfigParser:
                     "notification_format", notification_format
                 ),
                 ot_format=notify_config.get("ot_format", ot_format),
+                nba_teams=notification_team_config,
             )
             self.notification_configs.append(notification_config)
 
