@@ -4,6 +4,7 @@ from clutchtimealerts.config_parser import (
     ConfigParser,
     DEFAULT_NOTIFICATION_FORMAT,
     DEFAULT_OT_FORMAT,
+    NBA_TRICODES,
 )
 from clutchtimealerts.notifications.base import Notification
 
@@ -368,4 +369,114 @@ def test_parse_config_invalid_ot_format(
 
     mock_warning.assert_called_once_with(
         "Failed to create formatter for notification of type email: 'NOT_REAL_VALUE' ... skipping"
+    )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_default_nba_teams(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].nba_teams == NBA_TRICODES
+    assert parser.notification_configs[1].nba_teams == NBA_TRICODES
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_global_nba_teams(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "nba_teams": {"PHI", "BOS", "MIA"},
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].nba_teams == {"PHI", "BOS", "MIA"}
+    assert parser.notification_configs[1].nba_teams == {"PHI", "BOS", "MIA"}
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_notify_specific_nba_teams(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "nba_teams": {"PHI", "BOS", "MIA"},
+        "notifications": [
+            {
+                "type": "email",
+                "nba_teams": {"MIL"},
+                "config": {"recipient": "test@example.com"},
+            },
+            {
+                "type": "sms",
+                "nba_teams": {"NOP"},
+                "config": {"phone_number": "+123456789"},
+            },
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].nba_teams == {"MIL"}
+    assert parser.notification_configs[1].nba_teams == {"NOP"}
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+@patch("clutchtimealerts.config_parser.logger.warning")
+def test_parse_invalid_specific_nba_teams(
+    mock_warning, mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "nba_teams": {"PHI", "BOS", "MIA"},
+        "notifications": [
+            {
+                "type": "email",
+                "nba_teams": {"FAK"},
+                "config": {"recipient": "test@example.com"},
+            },
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].nba_teams == NBA_TRICODES
+
+    mock_warning.assert_called_once_with(
+        "No teams specified for notification type email defaulting to all teams"
     )
