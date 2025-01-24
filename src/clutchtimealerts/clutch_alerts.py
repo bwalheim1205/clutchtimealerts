@@ -48,7 +48,7 @@ class ClutchAlertsService:
             # Check if team in nba teams
             if (
                 game["homeTeam"]["teamTricode"] in notification_config.nba_teams
-                and game["awayTeam"]["teamTricode"] in notification_config.nba_teams
+                or game["awayTeam"]["teamTricode"] in notification_config.nba_teams
             ):
                 # Format message
                 try:
