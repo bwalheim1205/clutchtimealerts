@@ -15,3 +15,4 @@ class NotificationConfig:
     notification: Notification
     notification_format: str
     ot_format: str
+    nba_teams: set[str]

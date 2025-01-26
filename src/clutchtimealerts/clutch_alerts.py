@@ -45,28 +45,33 @@ class ClutchAlertsService:
         None
         """
         for notification_config in self.notification_configs:
-            # Format message
-            try:
-                if alert_type == "ot":
-                    message = format_message(game, notification_config.ot_format)
-                elif alert_type == "clutch":
-                    message = format_message(
-                        game, notification_config.notification_format
+            # Check if team in nba teams
+            if (
+                game["homeTeam"]["teamTricode"] in notification_config.nba_teams
+                or game["awayTeam"]["teamTricode"] in notification_config.nba_teams
+            ):
+                # Format message
+                try:
+                    if alert_type == "ot":
+                        message = format_message(game, notification_config.ot_format)
+                    elif alert_type == "clutch":
+                        message = format_message(
+                            game, notification_config.notification_format
+                        )
+                except Exception:
+                    logger.error(
+                        f"Error formatting message for {notification_config.notification.__class__.__name__}"
                     )
-            except Exception:
-                logger.error(
-                    f"Error formatting message for {notification_config.notification.__class__.__name__}"
-                )
-                continue
+                    continue
 
-            # Send message with notification
-            logger.debug(f"Sending message: {message}")
-            try:
-                notification_config.notification.send(message)
-            except Exception as e:
-                logger.error(
-                    f"Error sending notification to {notification_config.notification.__class__.__name__}: {e}"
-                )
+                # Send message with notification
+                logger.debug(f"Sending message: {message}")
+                try:
+                    notification_config.notification.send(message)
+                except Exception as e:
+                    logger.error(
+                        f"Error sending notification to {notification_config.notification.__class__.__name__}: {e}"
+                    )
 
     def _get_minutes_from_clock(self, clock) -> int:
         """

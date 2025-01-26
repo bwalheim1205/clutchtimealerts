@@ -70,13 +70,15 @@ of a configuration file
 
 ```yaml
 db_url: clutchtime.db
-notification_format: 
 
 notifications:
   - type: GroupMe
     config:
       bot_id: "<group-bot-id>"
   - type: Slack
+    nba_teams:
+        - PHI
+        - MIL
     config:
       channel: "#general"
       token: "<slack-api-token>"
@@ -103,10 +105,13 @@ notifications:
 
 **ot_format** (__Optional__): fstring for formatting ot alert messages. Defaults to "OT{OT_NUMBER} Alert\n{HOME_TEAM_TRI} {HOME_TEAM_SCORE} - {AWAY_TEAM_SCORE} {AWAY_TEAM_TRI}\n{NBA_COM_STREAM}"
 
+**nba_teams** (__Optional__): a list of NBA team tricodes that you wish to receive notifications list. Defaluts to all NBA teams
+
 **notifications**: List of notification configs
 -  **type**: class name or common name of the alert type
 -  **notification_format** (__Optional__): fstring for formatting clutch alert messages overwrites global level config.
-- **ot_format** (__Optional__): fstring for formatting ot alert messages. Overwrites global level config
+-  **ot_format** (__Optional__): fstring for formatting ot alert messages. Overwrites global level config
+-  **nba_teams** (__Optional__): a list of NBA team tricodes that you wish to receive notifications list. Overwrites global level config
 -  **config**: kwargs** for the alert classes
 
 ### Format Langauge
