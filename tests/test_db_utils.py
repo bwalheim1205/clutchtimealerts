@@ -122,12 +122,14 @@ def test_check_overtime_alert_sent(db_name):
     assert not check_overtime_alert_sent(Session, gameid, 1)
 
     update_overtime_number(Session, gameid)
-    assert not check_overtime_alert_sent(Session, gameid, 0)
+    assert check_overtime_alert_sent(Session, gameid, 0)
     assert check_overtime_alert_sent(Session, gameid, 1)
+    assert not check_overtime_alert_sent(Session, gameid, 2)
 
     update_overtime_number(Session, gameid)
-    assert not check_overtime_alert_sent(Session, gameid, 1)
+    assert check_overtime_alert_sent(Session, gameid, 1)
     assert check_overtime_alert_sent(Session, gameid, 2)
+    assert not check_overtime_alert_sent(Session, gameid, 3)
 
 
 def test_update_overtime_number(db_name):
