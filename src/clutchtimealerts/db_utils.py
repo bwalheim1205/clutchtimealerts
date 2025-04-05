@@ -222,7 +222,10 @@ def check_overtime_alert_sent(Session, gameid: str, overtime_number: int) -> boo
     try:
         game = (
             session.query(ClutchGame)
-            .filter_by(gameid=gameid, overtime_alert_number=overtime_number)
+            .filter(
+                (ClutchGame.gameid == gameid)
+                & (ClutchGame.overtime_alert_number >= overtime_number)
+            )
             .first()
         )
         return game is not None

@@ -1,6 +1,6 @@
 [project]
 name = "clutchtimealerts"
-version = "0.2.0"
+version = "0.2.1"
 description = "Default template for PDM package"
 authors = [
     {name = "Brian Walheim", email = "bri125521@gmail.com"},
