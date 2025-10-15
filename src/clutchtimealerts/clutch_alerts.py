@@ -45,33 +45,44 @@ class ClutchAlertsService:
         None
         """
         for notification_config in self.notification_configs:
-            # Check if team in nba teams
+            # Skip games not for specified teams
             if (
-                game["homeTeam"]["teamTricode"] in notification_config.nba_teams
-                or game["awayTeam"]["teamTricode"] in notification_config.nba_teams
+                game["homeTeam"]["teamTricode"] not in notification_config.nba_teams
+                and game["awayTeam"]["teamTricode"] not in notification_config.nba_teams
             ):
-                # Format message
-                try:
-                    if alert_type == "ot":
-                        message = format_message(game, notification_config.ot_format)
-                    elif alert_type == "clutch":
-                        message = format_message(
-                            game, notification_config.notification_format
-                        )
-                except Exception:
-                    logger.error(
-                        f"Error formatting message for {notification_config.notification.__class__.__name__}"
-                    )
-                    continue
+                logger.debug(
+                    f"Skipping notification for {notification_config.notification.__class__.__name__} as it is not in the nba teams"
+                )
+                continue
 
-                # Send message with notification
-                logger.debug(f"Sending message: {message}")
-                try:
-                    notification_config.notification.send(message)
-                except Exception as e:
-                    logger.error(
-                        f"Error sending notification to {notification_config.notification.__class__.__name__}: {e}"
+            # Skip if game is in the preseason and the notification configuration is not for the preseason
+            if self.isPreseason(game) and not notification_config.preseason:
+                logger.debug(
+                    f"Skipping notification for {notification_config.notification.__class__.__name__} as it is a preseason game"
+                )
+                continue
+
+            try:
+                if alert_type == "ot":
+                    message = format_message(game, notification_config.ot_format)
+                elif alert_type == "clutch":
+                    message = format_message(
+                        game, notification_config.notification_format
                     )
+            except Exception:
+                logger.error(
+                    f"Error formatting message for {notification_config.notification.__class__.__name__}"
+                )
+                continue
+
+            # Send message with notification
+            logger.debug(f"Sending message: {message}")
+            try:
+                notification_config.notification.send(message)
+            except Exception as e:
+                logger.error(
+                    f"Error sending notification to {notification_config.notification.__class__.__name__}: {e}"
+                )
 
     def _get_minutes_from_clock(self, clock) -> int:
         """
@@ -124,6 +135,22 @@ class ClutchAlertsService:
             return False
 
         return True
+
+    def isPreseason(self, game: dict) -> bool:
+        """
+        Checks if the given game is preseason game.
+
+        Parameters
+        ----------
+        game : dict
+            The game data to check.
+
+        Returns
+        -------
+        bool
+            True if the game is an overtime game, otherwise False.
+        """
+        return game["gameLabel"] == "Preseason"
 
     def isOvertime(self, game: dict) -> bool:
         """

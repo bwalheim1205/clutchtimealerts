@@ -16,3 +16,4 @@ class NotificationConfig:
     notification_format: str
     ot_format: str
     nba_teams: set[str]
+    preseason: bool = False

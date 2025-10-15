@@ -39,6 +39,7 @@ NBA_TRICODES = {
     "UTA",  # Utah Jazz
     "WAS",  # Washington Wizards
 }
+DEFAULT_PRESEASON = False
 
 
 class ConfigParser:
@@ -66,6 +67,7 @@ class ConfigParser:
         )
         ot_format = config.get("ot_format", DEFAULT_OT_FORMAT)
         team_config = set(config.get("nba_teams", NBA_TRICODES))
+        preseason = config.get("preseason", DEFAULT_PRESEASON)
 
         notification_yaml: list[dict] = config.get("notifications", [])
         self.notification_configs = []
@@ -126,6 +128,7 @@ class ConfigParser:
                 ),
                 ot_format=notify_config.get("ot_format", ot_format),
                 nba_teams=notification_team_config,
+                preseason=notify_config.get("preseason", preseason),
             )
             self.notification_configs.append(notification_config)
 

@@ -4,6 +4,7 @@ from clutchtimealerts.config_parser import (
     ConfigParser,
     DEFAULT_NOTIFICATION_FORMAT,
     DEFAULT_OT_FORMAT,
+    DEFAULT_PRESEASON,
     NBA_TRICODES,
 )
 from clutchtimealerts.notifications.base import Notification
@@ -397,6 +398,29 @@ def test_parse_default_nba_teams(
 
 @patch("yaml.safe_load")
 @patch("builtins.open", new_callable=mock_open)
+def test_parse_default_preseason(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].preseason == DEFAULT_PRESEASON
+    assert parser.notification_configs[1].preseason == DEFAULT_PRESEASON
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
 def test_parse_global_nba_teams(
     mock_open_file, mock_yaml_load, classname_dict, common_name_dict
 ):
@@ -480,3 +504,27 @@ def test_parse_invalid_specific_nba_teams(
     mock_warning.assert_called_once_with(
         "No teams specified for notification type email defaulting to all teams"
     )
+
+
+@patch("yaml.safe_load")
+@patch("builtins.open", new_callable=mock_open)
+def test_parse_global_preseason(
+    mock_open_file, mock_yaml_load, classname_dict, common_name_dict
+):
+    """Test config with no notification format."""
+    mock_yaml_load.return_value = {
+        "preseason": True,
+        "notifications": [
+            {"type": "email", "config": {"recipient": "test@example.com"}},
+            {"type": "sms", "config": {"phone_number": "+123456789"}},
+        ],
+    }
+    parser = ConfigParser(
+        config_path="test_config.yaml",
+        classname_dict=classname_dict,
+        common_name_dict=common_name_dict,
+    )
+    parser.parse_config()
+
+    assert parser.notification_configs[0].preseason
+    assert parser.notification_configs[1].preseason
