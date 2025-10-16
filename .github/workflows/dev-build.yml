@@ -3,7 +3,6 @@ name: Build and Push Dev Image
 on:
   push:
     branches:
-      - 23-enhancement-automate-dev-image-build
       - main
 
 # Prevent multiple overlapping builds on main
