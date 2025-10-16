@@ -14,6 +14,7 @@ A service that tracks ongoing NBA games and sends alerts when games enter "clutc
 
 We currently support the following notification types out of the box:
 
+- **Discord**
 - **GroupMe** 
 - **Slack**
 - **Ntfy**
@@ -72,6 +73,10 @@ of a configuration file
 db_url: clutchtime.db
 
 notifications:
+  - type: Discord
+    config:
+      channel: general
+      bot_token: <bot-id-token>
   - type: GroupMe
     config:
       bot_id: "<group-bot-id>"
