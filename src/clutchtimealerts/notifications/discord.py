@@ -4,6 +4,8 @@ import os
 
 
 class DiscordBotNotification(Notification):
+    COMMON_NAME = "Discord"
+
     def __init__(self, bot_token: str = None, channel: int = None):
         if bot_token is None:
             bot_token = os.getenv("DISCORD_BOT_TOKEN")
