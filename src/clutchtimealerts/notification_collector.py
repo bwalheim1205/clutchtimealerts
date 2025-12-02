@@ -1,5 +1,6 @@
 import os
 import importlib
+from importlib.metadata import entry_points
 import logging
 from clutchtimealerts.notifications.base import Notification
 
@@ -33,7 +34,19 @@ class NotificationCollector:
         module_path = root_path.replace("/", ".")
         return module_path
 
-    def collect_notifications(self, folder_path):
+    def _iter_plugin_entrypoints(self):
+        return entry_points(group="clutchtimealerts.notification_plugins")
+
+    def _add_notification_class(self, cls):
+        """Registers a discovered Notification subclass."""
+        if not issubclass(cls, Notification) or cls is Notification:
+            return
+
+        self.classname_dict[cls.__name__] = cls
+        self.common_name_dict[getattr(cls, "COMMON_NAME", cls.__name__)] = cls
+        logger.debug(f"Registered: {cls.__name__}")
+
+    def _collect_package_notifications(self, folder_path):
         """
         Collect notification classes from Python files in the specified folder.
 
@@ -64,17 +77,44 @@ class NotificationCollector:
                         f"Error importing module: {module_path}.{module_name} ... skipping"
                     )
                     continue
-                for name, obj in vars(module).items():
-                    if (
-                        isinstance(obj, type)
-                        and issubclass(obj, Notification)
-                        and obj != Notification
-                    ):
-                        self.classname_dict[name] = obj
-                        self.common_name_dict[obj.COMMON_NAME] = obj
-                        logger.debug(
-                            f"Found notification class: {name} ({obj.COMMON_NAME})"
-                        )
+                # Loads classes from module
+                for obj in module.__dict__.values():
+                    if isinstance(obj, type):
+                        self._add_notification_class(obj)
+
+    def _collect_plugin_notifications(self):
+        """
+        Collect notifications from any plugins that are loaded. Collects
+        from the entrypoint clutchtimealerts.notifaction_plugins. It
+        populates two dictionaries: one mapping class names to class objects
+        and another mapping common names to class objects.
+
+        Returns
+        -------
+        None
+        """
+        eps = self._iter_plugin_entrypoints()
+
+        for ep in eps:
+            try:
+                cls = ep.load()
+                logger.debug(f"Loaded plugin entry point: {ep.name}")
+                self._add_notification_class(cls)
+            except Exception as e:
+                logger.warning(f"Failed loading plugin '{ep.name}': {e}")
+
+    def collect_notifications(self, folder_path):
+        """
+        Collect notifications from both specified folder and from any plugins
+        that are loaded. It populates two dictionaries: one mapping
+        class names to class objects and another mapping common names to class objects.
+
+        Returns
+        -------
+        None
+        """
+        self._collect_package_notifications(folder_path)
+        self._collect_plugin_notifications()
 
 
 if __name__ == "__main__":

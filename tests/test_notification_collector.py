@@ -8,10 +8,32 @@ class MockNotification(Notification):
     COMMON_NAME = "mock_notification"
 
 
+class MockPlugin(Notification):
+    COMMON_NAME = "mock_plugin"
+
+
+class NotANotification:
+    pass
+
+
 @pytest.fixture
 def collector():
     """Fixture to create a fresh instance of NotificationCollector."""
     return NotificationCollector()
+
+
+def make_fake_ep(name, plugin_class):
+    ep = MagicMock()
+    ep.name = name
+    ep.load.return_value = plugin_class
+    return ep
+
+
+@pytest.fixture(autouse=True)
+def disable_plugins(monkeypatch):
+    monkeypatch.setattr(
+        NotificationCollector, "_iter_plugin_entrypoints", lambda self: []
+    )
 
 
 def test_folder_path_module_path(collector):
@@ -103,3 +125,29 @@ def test_collect_notifications_skips_non_python_files(
 
     assert len(collector.classname_dict) == 1
     assert len(collector.common_name_dict) == 1
+
+
+def test_collect_plugin_notifications_success(monkeypatch):
+    collector = NotificationCollector()
+
+    # Enable plugin mocks JUST for this test
+    monkeypatch.setattr(
+        collector,
+        "_iter_plugin_entrypoints",
+        lambda: [make_fake_ep("mock_plugin", MockPlugin)],
+    )
+
+    collector._collect_plugin_notifications()
+
+    assert "MockPlugin" in collector.classname_dict
+    assert collector.common_name_dict["mock_plugin"] == MockPlugin
+
+
+def test_collect_plugin_notifications_ignores_invalid(monkeypatch, collector):
+    bad_ep = make_fake_ep("bad", NotANotification)
+    monkeypatch.setattr(collector, "_iter_plugin_entrypoints", lambda: [bad_ep])
+
+    collector._collect_plugin_notifications()
+
+    assert collector.classname_dict == {}
+    assert collector.common_name_dict == {}

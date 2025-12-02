@@ -16,7 +16,6 @@ requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "MIT"}
 
-
 [dependency-groups]
 lint = [
     "pre-commit>=4.0.1",
@@ -33,3 +32,5 @@ ignore = ["E501"]
 [tool.pdm]
 distribution = true
 
+# Adding extry point for plugins
+[project.entry-points."clutchtimealerts.notification_plugins"]
