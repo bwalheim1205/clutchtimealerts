@@ -77,7 +77,7 @@ class ConfigParser:
 
             # Get YAML Config
             notifiction_type = notify_config["type"]
-            class_config = notify_config["config"]
+            class_config = notify_config.get("config", {})
             notification_team_config = NBA_TRICODES.intersection(
                 set(notify_config.get("nba_teams", team_config))
             )

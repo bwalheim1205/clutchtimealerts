@@ -165,3 +165,42 @@ python3 -m clutchtimealerts -f <path-to-config>
 ```sh
 docker run -v <path-to-config>:/app/config.yml clutchtimealerts
 ```
+
+# Plugins
+
+Is there a notification type we don't currently support? You can add your own by writing a notification plugin. No need to fork this recipe just create your own plugin project and install it.
+
+## Writing Your Own Notification Plugin
+
+To create a plugin:
+
+1. Implement a subclass of `Notification`.
+2. Give it a `COMMON_NAME`.
+3. Expose it via an entry point in your `pyproject.toml`.
+
+Example:
+
+`plugin_example.py`:
+
+```python
+from clutchtimealerts.notifications.base import Notification
+
+class PluginNotification(Notification):
+    COMMON_NAME = "Plugin"
+
+    def send(self, message: str):
+        # Custom Send Logic
+        pass
+
+```
+
+`pyproject.toml`:
+
+```toml
+[project.entry-points."clutchtimealerts.notification_plugins"]
+plugin = "plugin_example:PluginNotification"
+```
+
+You can see a complete working example in the example plugin project:
+
+**Example plugin:** https://github.com/bwalheim1205/clutchtimealerts-example-plugin
